@@ -2,27 +2,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned long* generateSieve(long max, long *len);
-void filterSieve(unsigned long* sieve, long first, long *len);
+long* generateSieve(long max, long *len);
+void filterSieve(long* sieve, long first, long *len, long max);
 
 int main(void) {
 
     long len;
     long i = 0;
 
-    unsigned long* sieve = generateSieve(100L, &len);
+    long* sieve = generateSieve(3865L, &len);
 
     printf("generated primes: %ld\n", len);
 
     for(;i < len; i++) {
-        printf("%2ld ", sieve[i]);
-        if((i+1)%5 == 0 && i != 0) printf("\n");
+        printf("%3ld ", sieve[i]);
+        if((i+1)%10 == 0 && i != 0) printf("\n");
     }
 }
 
-unsigned long* generateSieve(long max, long *len) {
+long* generateSieve(long max, long *len) {
 
-    unsigned long *initSieve;
+    long *initSieve;
     long k = lround(((double)(max)/6.0));
     long i;
     long km1;
@@ -33,32 +33,32 @@ unsigned long* generateSieve(long max, long *len) {
 
     *len = 2;
 
-    for(i = 1, km1 = 6*i - 1, kp1 = 6*i + 1; i <= k && km1 <= max && kp1 <= max; i++, km1 = 6*i - 1, kp1 = 6*i + 1) {
+    for(i = 1, km1 = 6*i - 1, kp1 = 6*i + 1; i <= k; i++, km1 = 6*i - 1, kp1 = 6*i + 1) {
 
-        if(km1%2 != 0 && km1 %3 != 0) {
+        if(km1%2 != 0 && km1 %3 != 0 && km1 <= max) {
             *(initSieve++) = km1;
             *len += 1;
         }
 
-        if(kp1%2 != 0 && kp1 %3 != 0) {
+        if(kp1%2 != 0 && kp1 %3 != 0 && kp1 <= max) {
             *(initSieve++) = kp1;
             *len += 1;
         }
     }
     initSieve -= *len;
-
-    filterSieve(initSieve, 3, len);
+    printf("init length - %ld\n", *len);
+    filterSieve(initSieve, 2, len, max);
 
     return initSieve;
 }
 
-void filterSieve(unsigned long* sieve, long first, long *len) {
+void filterSieve(long* sieve, long first, long *len, long max) {
 
-    if(first == *len) {
+    long curr = *(sieve+first);
+
+    if(curr > (long)sqrt(max)) {
         return;
     }
-
-    unsigned long curr = sieve[first];
 
     long idx = first+1;
     long copyIdx = first+1;
@@ -66,12 +66,15 @@ void filterSieve(unsigned long* sieve, long first, long *len) {
     long initLen = *len;
 
     while(idx < initLen) {
-        if(sieve[idx]%curr == 0) {
-            copyIdx = idx;
-            *len--;
+        long idxed = *(sieve+idx);
+        if(idxed%curr == 0) {
+            *len -= 1;
         } else {
-            sieve[copyIdx] = sieve[idx];
+            *(sieve+copyIdx) = idxed;
+            copyIdx++;
         }
         idx++;
     }
+
+    filterSieve(sieve, first+1, len, max);
 }
