@@ -1,80 +1,84 @@
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
-long* generateSieve(long max, long *len);
-void filterSieve(long* sieve, long first, long *len, long max);
+//the maximum size of prime seeds sqrt(1000000000) ~ 31622.xxx
+#define MAX_SEEDS 31623
+#define MAX_SEGMENT 100000
+
+unsigned long seeds[MAX_SEEDS];
+long seedCount = 0;
+unsigned long pMax = 0;
+short primes[MAX_SEGMENT];
+
+void initSeeds(unsigned long max) {
+    unsigned long i, j, bound, prevBound;
+    short *sa;
+
+    bound = (unsigned long)ceil(sqrt(max));
+    prevBound = (unsigned long)ceil(sqrt(pMax));
+    if(pMax < max) {
+        sa = (short*)malloc((bound-prevBound)*sizeof(short));
+        memset((void *)sa, 1, (bound-prevBound)*sizeof(short));
+
+        for(i = 0; i < seedCount; i++) {
+            for(j = prevBound + seeds[i]*seeds[i]; j <= bound; j+= seeds[i]) {
+                sa[j-1-prevBound] = 0;
+            }
+        }
+
+        i = prevBound <= 2 ? 2 : prevBound/2;
+
+        for(; i <= bound ; i++) {
+            if(sa[i-1-prevBound]) {
+                seeds[seedCount++] = i;
+                for(j = prevBound + i*i;j <= bound; j+=i) {
+                    sa[j-1-prevBound] = 0;
+                }
+            }
+        }
+
+        free(sa);
+        pMax = max;
+    }
+
+    return 0;
+}
 
 int main(void) {
+    unsigned long i, m, n, upper, lower, p;
+    int tests;
 
-    long len;
-    long i = 0;
+    scanf("%d", &tests);
 
-    long* sieve = generateSieve(3865L, &len);
+    while(tests--) {
+        scanf("%ld %ld", &m, &n);
+        initSeeds(n);
 
-    printf("generated primes: %ld\n", len);
+        memset((void *)primes, 1, (n-m+1)*sizeof(short));
 
-    for(;i < len; i++) {
-        printf("%3ld ", sieve[i]);
-        if((i+1)%10 == 0 && i != 0) printf("\n");
+        for(i = 0, p=seeds[i]; i < seedCount && p*p <= n; i++, p = seeds[i]) {
+            //start at the closest smaller number divisible by the prime on the lower bound and
+            //end the the closest smaller number divisible by the prime on the upper bound
+            upper = (n/p) * p;
+            lower = (m/p)*p;
+            lower = lower < m ? (lower + p == p ? (lower + p + p) : (lower + p)) : (lower == p ? lower + p : lower);
+            for(; lower <= upper; lower += p) {
+                if(lower >= m && lower <= n) {
+                    primes[lower-m] = 0;
+                }
+            }
+        }
+
+        if(m == 1) primes[0] = 0;
+
+        for(i = m; i <= n; i++) {
+            if(primes[i-m]) {
+                printf("%ld\n", i);
+            }
+        }
+        printf("\n");
     }
 }
 
-long* generateSieve(long max, long *len) {
-
-    long *initSieve;
-    long k = lround(((double)(max)/6.0));
-    long i;
-    long km1;
-    long kp1;
-
-    *(initSieve++) = 2;
-    *(initSieve++) = 3;
-
-    *len = 2;
-
-    for(i = 1, km1 = 6*i - 1, kp1 = 6*i + 1; i <= k; i++, km1 = 6*i - 1, kp1 = 6*i + 1) {
-
-        if(km1%2 != 0 && km1 %3 != 0 && km1 <= max) {
-            *(initSieve++) = km1;
-            *len += 1;
-        }
-
-        if(kp1%2 != 0 && kp1 %3 != 0 && kp1 <= max) {
-            *(initSieve++) = kp1;
-            *len += 1;
-        }
-    }
-    initSieve -= *len;
-    printf("init length - %ld\n", *len);
-    filterSieve(initSieve, 2, len, max);
-
-    return initSieve;
-}
-
-void filterSieve(long* sieve, long first, long *len, long max) {
-
-    long curr = *(sieve+first);
-
-    if(curr > (long)sqrt(max)) {
-        return;
-    }
-
-    long idx = first+1;
-    long copyIdx = first+1;
-
-    long initLen = *len;
-
-    while(idx < initLen) {
-        long idxed = *(sieve+idx);
-        if(idxed%curr == 0) {
-            *len -= 1;
-        } else {
-            *(sieve+copyIdx) = idxed;
-            copyIdx++;
-        }
-        idx++;
-    }
-
-    filterSieve(sieve, first+1, len, max);
-}
