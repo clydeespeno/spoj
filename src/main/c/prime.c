@@ -42,8 +42,6 @@ void initSeeds(unsigned long max) {
         free(sa);
         pMax = max;
     }
-
-    return 0;
 }
 
 int main(void) {
@@ -80,5 +78,7 @@ int main(void) {
         }
         printf("\n");
     }
+
+    return 0;
 }
 
